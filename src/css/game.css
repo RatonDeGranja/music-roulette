@@ -1,0 +1,15 @@
+#spotify-player-container {
+    display: none;
+        position: absolute;
+        width:0;
+        height:0;
+        border:0;
+
+    >iframe{
+        display: none;
+        position: absolute;
+        width:0;
+        height:0;
+        border:0;
+    }
+}
