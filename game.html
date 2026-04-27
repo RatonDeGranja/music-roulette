@@ -8,10 +8,28 @@
     <script src="src/game.js" type="module"></script>
 </head>
 <body>
-    <h1>JUEGO</h1>
-    <div id="spotify-player-container" style="display: none;"></div>
+    <header>
+        <a href="index.html"><h1>Music Roulette</h1></a>
+    </header>
 
-    <script src="https://open.spotify.com/embed/iframe-api/v1" async></script>
-    <h2 id="nombre-cancion-personalizado">Cargando música...</h2>
+    <main>
+        <h1>JUEGO</h1>
+        <div id="spotify-player-container" style="display: none;"></div>
+
+        <script src="https://open.spotify.com/embed/iframe-api/v1" async></script>
+        <h2 id="nombre-cancion-personalizado">Cargando música...</h2>
+
+        <h1 id="ronda-titulo">Ronda 1</h1>
+    
+        <div id="spotify-player-container" style="display: none;"></div>
+        <script src="https://open.spotify.com/embed/iframe-api" async></script>
+
+        <h2 id="pregunta">¿De quién es esta canción?</h2>
+        
+        <div id="voto-container"></div>
+
+        <h3 id="nombre-cancion-personalizado" style="display: none;"></h3>
+    </main>
+    
 </body>
 </html>

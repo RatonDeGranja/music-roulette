@@ -1,5 +1,5 @@
 function toGame(evt){
     evt.preventDefault();
 
-    location.href = "game.html";
+    //location.href = "game.html";
 }

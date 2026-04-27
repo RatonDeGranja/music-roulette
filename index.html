@@ -8,20 +8,26 @@
     <link rel="stylesheet" href="src/css/index.css">
     <script src="src/profile.js" type="module"></script>
     <script src="src/index.js"></script>
+    <script type="module" src="src/lobby.js"></script>
 </head>
 <body>
     <header>
-        <h1>Music Roulette</h1>
+        <a href="index.html"><h1>Music Roulette</h1></a>
     </header>
 
     <main>
         <form>
             <h2>Room ID</h2>
             <div>
+                <input type="text" name="nombre" id="nombre">
                 <input type="text" name="id_room" id="id_room">
-                <button onclick="toGame(event)">
+                <button id="unirse" onclick="toGame(event)">
                     Join Room
                 </button>
+                <button id="btn-crear-sala">Crear nueva sala</button>
+                <h3 id="mensaje-sala" style="display: none;">
+                    Código de la sala: <strong id="codigo-sala"></strong>
+                </h3>
             </div>
             
         </form>

@@ -1,30 +1,34 @@
-const clientId = "7c6d4b819bba4e32ac742448b0ec95e1"; //ID de la app
+const clientId = "7c6d4b819bba4e32ac742448b0ec95e1"; 
+const tokenGuardado = localStorage.getItem("token");
 const params = new URLSearchParams(window.location.search);
 const code = params.get("code");
 
-const tokenGuardado = localStorage.getItem("token");
-
+// 1. SI YA TIENES TOKEN (Entras directo)
 if (tokenGuardado) {
-    // Si ya lo tenemos, no miramos la URL, vamos directos a cargar el perfil
     const profile = await fetchProfile(tokenGuardado);
-    console.log(profile);
-    populateUI(profile);
-} else {
-    // Si NO lo tenemos, entonces sí miramos la URL
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
-    if(!code){
-        redirectToAuthCodeFlow(clientId);
+    if (profile.error && profile.error.status === 401) {
+        console.warn("El token caducó. Redirigiendo para renovarlo...");
+        localStorage.removeItem("token"); 
+        redirectToAuthCodeFlow(clientId); 
+    } else {
+        console.log("Perfil cargado con éxito:", profile);
     }
-    else{
-        const accesToken = await getAccessToken(clientId, code);
-        localStorage.setItem("token", accesToken);
-
-        
-        const profile = await fetchProfile(accesToken);
-        console.log(profile); 
-        populateUI(profile);
-    }
+} 
+// 2. SI VUELVES DE SPOTIFY CON PERMISO
+else if (code) {
+    const accesToken = await getAccessToken(clientId, code);
+    localStorage.setItem("token", accesToken);
+    
+    // Limpiamos la URL para que quede bonita (opcional pero recomendado)
+    window.history.pushState({}, null, "/");
+    
+    const profile = await fetchProfile(accesToken);
+    console.log("Nuevo inicio de sesión exitoso:", profile); 
+} 
+// 3. SI ERES NUEVO (Te mandamos a loguearte)
+else {
+    console.log("No hay sesión. Redirigiendo a Spotify...");
+    redirectToAuthCodeFlow(clientId);
 }
 
 async function redirectToAuthCodeFlow(clientId) {
@@ -87,18 +91,27 @@ async function getAccessToken(clientId, code) {
     return access_token;
 }
 
-async function fetchProfile(token) {
+export async function fetchProfile(token) {
     // TODO: Call Web API
 
     const result = await fetch("https://api.spotify.com/v1/me", {
         method: "GET", headers: { Authorization: `Bearer ${token}` }
     });
 
+    if (!result.ok) {
+        const errorText = await result.text();
+        return { error: { status: result.status, message: errorText } };
+    }
+
     return await result.json();
 }
 
 function populateUI(profile) {
-    document.getElementById("displayName").innerText = profile.display_name;
+    const etiquetaNombre = document.getElementById("displayName");
+    // Solo intenta poner el nombre si la etiqueta realmente existe en esta pantalla
+    if (etiquetaNombre) {
+        etiquetaNombre.innerText = profile.display_name;
+    }
     if (profile.images[0]) {
         const profileImage = new Image(200, 200);
         profileImage.src = profile.images[0].url;
