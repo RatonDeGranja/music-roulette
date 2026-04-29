@@ -9,6 +9,7 @@ const codigo = parametrosURL.get("codigo");
 const cod_text = document.getElementById("code");
 const players_grid = document.getElementById("players_grid");
 var listaJugadores = null;
+const miNombre = localStorage.getItem("nombreUsuario");
 
 if (codigo) {
     cod_text.textContent = "ROOM ID: " + codigo;
@@ -61,11 +62,18 @@ btnEmpezar.addEventListener("click", async (e) => {
     try {
         console.log("Intentando actualizar Firebase...");
 
+        let puntuaciones = [];
+
+        listaJugadores.forEach(jugador => {
+            puntuaciones.push({"nombre": jugador, "puntuacion": 0});
+        });
+
         await updateDoc(referenciaSala, {
             estado: "jugando",
             cancionesPartida: cancionesMezcladas,
             rondaActual: 0,
-            votos: {}
+            votos: {},
+            puntuaciones: puntuaciones
         });
 
         console.log("✅ ¡ESCRITURA EXITOSA! Ahora el onSnapshot debería activarse.");

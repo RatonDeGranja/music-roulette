@@ -1,5 +1,4 @@
 import { fetchProfile } from "./profile.js";
-import { array } from "firebase/firestore/pipelines";
 import { db } from "./firebase.js";
 import {doc, setDoc, getDoc, updateDoc, arrayUnion} from "firebase/firestore";
 

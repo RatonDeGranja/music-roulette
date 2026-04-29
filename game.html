@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <link rel="stylesheet" href="src/css/game.css">
+    <script type="importmap">
+  {
+    "imports": {
+      "firebase/app": "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js",
+      "firebase/firestore": "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js"
+    }
+  }
+</script>
     <script src="src/game.js" type="module"></script>
 </head>
 <body>
@@ -15,7 +23,7 @@
     <main>
         <h1>JUEGO</h1>
         <div id="spotify-player-container" style="display: none;"></div>
-
+        <p id="contador"></p>
         <script src="https://open.spotify.com/embed/iframe-api/v1" async></script>
         <h2 id="nombre-cancion-personalizado">Cargando música...</h2>
 
@@ -29,6 +37,7 @@
         <div id="voto-container"></div>
 
         <h3 id="nombre-cancion-personalizado" style="display: none;"></h3>
+        <dialog id="dialog"></dialog>
     </main>
     
 </body>
