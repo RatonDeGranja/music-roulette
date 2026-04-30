@@ -1,6 +1,6 @@
 import { setLogLevel } from "firebase/app";
 import { db } from "./firebase.js";
-import { doc, onSnapshot, updateDoc, getDoc, arrayUnion } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, getDoc, arrayUnion, arrayRemove, deleteDoc } from "firebase/firestore";
 
 const parametrosURL = new URLSearchParams(window.location.search);
 const codigo = parametrosURL.get("codigo");
@@ -11,6 +11,7 @@ const miNombre = localStorage.getItem("nombreUsuario");
 var referenciaSala = null;
 
 let ronda = 1;
+let rondaLocal = -1;
 let reproductorSpotify = null;
 let salaActual = null;
 let yaHeVotado = false;
@@ -31,14 +32,17 @@ if (codigo) {
             console.log("📦 Datos recibidos de Firebase:", nuevosDatos);
             
             salaActual = nuevosDatos;
-            console.log("Sala actual: ", salaActual);
-            
-            if(terminaRonda){
+            if(ronda === rondas){
+                location.href = `lobby.html?codigo=${codigo}`;
+            }
+            if (salaActual.rondaActual !== rondaLocal) {
+                rondaLocal = salaActual.rondaActual; // Actualizamos nuestra memoria
                 gestionarEstadoJuego(); 
             }
             
         } else {
             console.error("❌ La sala no existe en Firebase.");
+            location.href = "index.html";
         }
     });
 
@@ -87,8 +91,8 @@ function gestionarEstadoJuego() {
     
     dibujarBotonesVoto(); 
     
-    if (reproductorSpotify && salaActual.creador === miNombre) {
-        console.log("Eres el Host. Reproduciendo:", cancionActual.titulo);
+    if (reproductorSpotify) {
+        console.log("Reproduciendo:", cancionActual.titulo);
         reproducirCancion(cancionActual.uri);
     }
 
@@ -98,23 +102,95 @@ function gestionarEstadoJuego() {
 
 function iniciarReloj() {
     const elementoContador = document.getElementById('contador');
-    if (elementoContador) elementoContador.textContent = segundos;
+    
+    function actualizarTiempo() {
+        const milisegundosPasados = Date.now() - salaActual.tiempoInicioRonda;
+        const segundosPasados = Math.floor(milisegundosPasados / 1000);
+        
+        segundos = 30 - segundosPasados;
 
-    intervaloTemporizador = setInterval(() => {
         if (segundos > 0 && seguir) {
-            segundos--;
-            tiempo_puntuacion = segundos * 100;
             if (elementoContador) elementoContador.textContent = segundos;
         } else {
+            // EL TIEMPO SE ACABÓ
+            segundos = 0; 
+            if (elementoContador) elementoContador.textContent = "0";
+            
             clearInterval(intervaloTemporizador);
             terminaRonda = true;
             seguir = false;
 
-            if (salaActual.creador === miNombre) {
-                calcularResultadosYPasarRonda();
+            // 🔥 TODOS los jugadores van a esta función ahora, no solo el Host
+            procesarFinDeRonda();
+        }
+    }
+
+    actualizarTiempo(); // Lo ejecutamos de golpe para que no falle al recargar
+    intervaloTemporizador = setInterval(actualizarTiempo, 1000);
+}
+
+async function procesarFinDeRonda() {
+    console.log("Tiempo agotado. Procesando fin de ronda...");
+    
+    // Bloqueamos los botones para que nadie vote en el último microsegundo
+    yaHeVotado = true;
+    dibujarBotonesVoto();
+
+    // 1. 👁️ MOSTRAR RESULTADOS A TODOS LOS JUGADORES
+    // Hacemos una copia local para que el cartel se abra al instante
+    let puntuacionesLocales = JSON.parse(JSON.stringify(salaActual.puntuaciones));
+    const votosDeRonda = salaActual.votos || [];
+
+    for (let i = 0; i < votosDeRonda.length; i++) {
+        const voto = votosDeRonda[i];
+        if (voto.votado === cancionActual.dueno) {
+            for (let j = 0; j < puntuacionesLocales.length; j++) {
+                if (puntuacionesLocales[j].nombre === voto.votante) {
+                    puntuacionesLocales[j].puntuacion += voto.puntosPosibles;
+                }
             }
         }
-    }, 1000);
+    }
+
+    // Ordenamos y lanzamos el Dialog para todos
+    puntuacionesLocales.sort((a, b) => b.puntuacion - a.puntuacion);
+    mostrarDialogPuntuaciones(puntuacionesLocales);
+
+    // 2. 👑 SOLO EL HOST HACE EL TRÁMITE OFICIAL EN FIREBASE
+    if (salaActual.creador === miNombre) {
+        console.log("Soy el Host. Asegurando votos finales en la nube...");
+        
+        // El Host vuelve a pedir a Firebase los votos por si entró alguno tarde
+        const docSnap = await getDoc(referenciaSala);
+        const datosActuales = docSnap.data();
+        
+        let puntuacionesOficiales = datosActuales.puntuaciones;
+        const votosOficiales = datosActuales.votos || [];
+
+        for (let i = 0; i < votosOficiales.length; i++) {
+            const voto = votosOficiales[i];
+            if (voto.votado === cancionActual.dueno) {
+                for (let j = 0; j < puntuacionesOficiales.length; j++) {
+                    if (puntuacionesOficiales[j].nombre === voto.votante) {
+                        puntuacionesOficiales[j].puntuacion += voto.puntosPosibles;
+                    }
+                }
+            }
+        }
+
+        puntuacionesOficiales.sort((a, b) => b.puntuacion - a.puntuacion);
+
+        // Esperamos 5 segundos viendo el Dialog y pasamos de ronda
+        setTimeout(async () => {
+            ronda++;
+            await updateDoc(referenciaSala, {
+                rondaActual: salaActual.rondaActual + 1,
+                votos: [],
+                puntuaciones: puntuacionesOficiales,
+                tiempoInicioRonda: Date.now() // Sellamos la nueva hora
+            });
+        }, 5000); 
+    }
 }
 
 function dibujarBotonesVoto() {
@@ -125,7 +201,7 @@ function dibujarBotonesVoto() {
     salaActual.jugadores.forEach(nombre => {
         const btn = document.createElement("button");
         btn.innerText = nombre;
-        btn.className = "btn-jugador";
+        btn.className = "btn-jugador btn btn-success btn-lg";
         
         if (yaHeVotado) btn.disabled = true;
 
@@ -144,7 +220,8 @@ async function registrarVoto(candidato, evt) {
 
     console.log(`Has votado que la canción es de: ${candidato}`);
     
-
+    tiempo_puntuacion = segundos * 100;
+    console.log("Tiempo puntuacion: ", tiempo_puntuacion);
     const ficha_voto = {
         "votante": miNombre, 
         "votado": candidato,
@@ -163,7 +240,7 @@ async function registrarVoto(candidato, evt) {
 }
 
 async function calcularResultadosYPasarRonda() {
-    console.log("Soy el Host, calculando recuento final...");
+    console.log("Calculando recuento final...");
     
     const docSnap = await getDoc(referenciaSala);
     const datosActuales = docSnap.data();
@@ -194,7 +271,8 @@ async function calcularResultadosYPasarRonda() {
         await updateDoc(referenciaSala, {
             rondaActual: salaActual.rondaActual + 1,
             votos: [],
-            puntuaciones: puntuaciones
+            puntuaciones: puntuaciones,
+            tiempoInicioRonda: Date.now()
         });
 
     }, 5000); 
@@ -244,5 +322,38 @@ function reproducirCancion(uri) {
     if (reproductorSpotify) {
         reproductorSpotify.loadUri(uri);
         reproductorSpotify.play();
+    }
+}// -----------------------------------------------------------
+// 🚪 SISTEMA DE DESCONEXIÓN Y LIMPIEZA
+// -----------------------------------------------------------
+
+window.addEventListener("beforeunload", (evento) => {
+    abandonarSala();
+});
+
+async function abandonarSala() {
+    if (!referenciaSala || !miNombre) return;
+
+    try {
+        const docSnap = await getDoc(referenciaSala);
+        
+        if (docSnap.exists()) {
+            const datosActuales = docSnap.data();
+            // Calculamos cuántos jugadores quedarían si nos vamos nosotros
+            const jugadoresRestantes = datosActuales.jugadores.filter(jugador => jugador !== miNombre);
+
+            if (jugadoresRestantes.length === 0 || miNombre === salaActual.creador) {
+                await deleteDoc(referenciaSala);
+                console.log("Sala destruida (no quedaba nadie).");
+            } else {
+
+                await updateDoc(referenciaSala, {
+                    jugadores: arrayRemove(miNombre)
+                });
+                console.log(`El jugador ${miNombre} ha abandonado la partida.`);
+            }
+        }
+    } catch (error) {
+        console.error("Error al intentar abandonar la sala:", error);
     }
 }

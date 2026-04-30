@@ -13,6 +13,7 @@
     "vite": "^8.0.10"
   },
   "dependencies": {
+    "bootstrap": "^5.3.8",
     "firebase": "^12.12.1"
   }
 }

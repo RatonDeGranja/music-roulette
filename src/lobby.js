@@ -111,7 +111,7 @@ async function unirseSala(evt){
     const inputCodigo = document.getElementById("id_room");
     const inputNombre = document.getElementById("nombre");
 
-    // Chivato 3: ¿Existen los inputs?
+
     if (!inputCodigo || !inputNombre) {
         console.error("❌ No se encuentran los inputs id_room o nombre en el HTML");
         return;
@@ -119,7 +119,7 @@ async function unirseSala(evt){
 
     const codigo = inputCodigo.value.toUpperCase().trim();
     const nombre = inputNombre.value.trim();
-
+    localStorage.setItem("nombreUsuario", nombre);
     console.log(`Buscando sala: ${codigo} para el usuario: ${nombre}`);
 
     const referenciasSala = doc(db, "salas", codigo);

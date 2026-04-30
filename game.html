@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="src/css/game.css">
+    <link rel="stylesheet" href="src/css/common.css">
     <script type="importmap">
   {
     "imports": {
@@ -20,17 +22,15 @@
         <a href="index.html"><h1>Music Roulette</h1></a>
     </header>
 
-    <main>
+    <main class="text-align">
         <h1>JUEGO</h1>
-        <div id="spotify-player-container" style="display: none;"></div>
+       <div id="spotify-player-container" style="position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none;"></div>
         <p id="contador"></p>
         <script src="https://open.spotify.com/embed/iframe-api/v1" async></script>
         <h2 id="nombre-cancion-personalizado">Cargando música...</h2>
 
         <h1 id="ronda-titulo">Ronda 1</h1>
     
-        <div id="spotify-player-container" style="display: none;"></div>
-        <script src="https://open.spotify.com/embed/iframe-api" async></script>
 
         <h2 id="pregunta">¿De quién es esta canción?</h2>
         
@@ -39,6 +39,6 @@
         <h3 id="nombre-cancion-personalizado" style="display: none;"></h3>
         <dialog id="dialog"></dialog>
     </main>
-    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
 </body>
 </html>

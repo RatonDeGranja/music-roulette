@@ -1,6 +1,6 @@
 
 import { db } from "./firebase.js";
-import { doc, onSnapshot, setDoc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
+import { doc, onSnapshot, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, deleteDoc } from "firebase/firestore";
 
 
 const parametrosURL = new URLSearchParams(window.location.search);
@@ -44,6 +44,7 @@ if (codigo) {
 
     } else {
         console.warn("La sala ha dejado de existir.");
+        location.href = "index.html";
     }
 });
 const btnEmpezar = document.querySelector("footer button");
@@ -72,8 +73,9 @@ btnEmpezar.addEventListener("click", async (e) => {
             estado: "jugando",
             cancionesPartida: cancionesMezcladas,
             rondaActual: 0,
-            votos: {},
-            puntuaciones: puntuaciones
+            votos: [],
+            puntuaciones: puntuaciones,
+            tiempoInicioRonda: Date.now()
         });
 
         console.log("✅ ¡ESCRITURA EXITOSA! Ahora el onSnapshot debería activarse.");
@@ -96,4 +98,35 @@ function barajarArray(array) {
         [copia[i], copia[j]] = [copia[j], copia[i]];
     }
     return copia;
+}
+
+window.addEventListener("beforeunload", () => {
+    abandonarLobby();
+});
+
+async function abandonarSala() {
+    if (!referenciaSala || !miNombre) return;
+
+    try {
+        const docSnap = await getDoc(referenciaSala);
+        
+        if (docSnap.exists()) {
+            const datosActuales = docSnap.data();
+            // Calculamos cuántos jugadores quedarían si nos vamos nosotros
+            const jugadoresRestantes = datosActuales.jugadores.filter(jugador => jugador !== miNombre);
+
+            if (jugadoresRestantes.length === 0 || miNombre === salaActual.creador) {
+                await deleteDoc(referenciaSala);
+                console.log("Sala destruida (no quedaba nadie).");
+            } else {
+
+                await updateDoc(referenciaSala, {
+                    jugadores: arrayRemove(miNombre)
+                });
+                console.log(`El jugador ${miNombre} ha abandonado la partida.`);
+            }
+        }
+    } catch (error) {
+        console.error("Error al intentar abandonar la sala:", error);
+    }
 }
