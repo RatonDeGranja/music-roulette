@@ -1,0 +1,68 @@
+/* src/css/index.css */
+form {
+    background-color: #181818;
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+    border: 1px solid #282828;
+}
+
+form h2 {
+    font-size: 1.2rem;
+    color: #b3b3b3;
+    margin-bottom: 10px;
+    text-align: left;
+}
+
+form input {
+    width: 100%;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #333;
+    background-color: #282828;
+    color: white;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+}
+
+form input:focus {
+    outline: none;
+    border-color: #1DB954;
+    box-shadow: 0 0 0 2px rgba(29, 185, 84, 0.3);
+}
+
+/* Estilos de botones generales */
+.btn-primary {
+    background-color: #1DB954 !important;
+    border: none !important;
+    color: black !important;
+    font-weight: bold !important;
+}
+
+.btn-primary:hover, .btn-success:hover {
+    filter: brightness(1.1);
+    transform: scale(1.02);
+}
+
+/* Grid para los jugadores esperando en el Lobby */
+#players_grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 30px;
+    margin-bottom: 40px;
+}
+
+#players_grid div {
+    background-color: #282828;
+    padding: 10px 25px;
+    border-radius: 30px;
+    font-weight: bold;
+    font-size: 1.2rem;
+    border: 1px solid #1DB954;
+    box-shadow: 0 4px 10px rgba(29, 185, 84, 0.15);
+}

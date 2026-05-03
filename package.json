@@ -13,6 +13,9 @@
     "vite": "^8.0.10"
   },
   "dependencies": {
+    "@capacitor/android": "^8.3.1",
+    "@capacitor/cli": "^8.3.1",
+    "@capacitor/core": "^8.3.1",
     "bootstrap": "^5.3.8",
     "firebase": "^12.12.1"
   }

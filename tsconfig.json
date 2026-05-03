@@ -19,5 +19,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"]
+  "include": ["www/src/profile.js", "www/src/enter_lobby.js", "www/src/firebase.js", "www/src/game.js", "www/src/index.js", "www/src/lobby.js", "www/src/main.ts", "www/src/counter.ts"]
 }

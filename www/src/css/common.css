@@ -1,0 +1,71 @@
+/* src/css/common.css */
+body {
+    background-color: #121212; /* Fondo oscuro tipo Spotify */
+    color: #ffffff;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+header {
+    background-color: #000000;
+    padding: 20px;
+    text-align: center;
+    border-bottom: 2px solid #1DB954; /* Línea verde Spotify */
+}
+
+header a {
+    text-decoration: none;
+}
+
+header h1 {
+    color: #1DB954;
+    margin: 0;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-shadow: 0 0 10px rgba(29, 185, 84, 0.3);
+}
+
+main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+}
+
+/* Ocultar el iframe de Spotify completamente para que no estorbe visualmente */
+#spotify-player-container, iframe {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.toast-personalizado {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background-color: #e22134; /* Rojo estilo error */
+    color: white;
+    padding: 12px 24px;
+    border-radius: 50px;
+    font-weight: bold;
+    font-size: 1rem;
+    z-index: 9999;
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); /* Animación de rebote */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.toast-personalizado.mostrar {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
