@@ -1,5 +1,8 @@
+
 import { db } from "./firebase.js";
-import { doc, onSnapshot, updateDoc, getDoc, arrayUnion, arrayRemove, deleteDoc } from "firebase/firestore";
+import { doc, onSnapshot, setDoc, updateDoc, getDoc, arrayUnion, arrayRemove, deleteDoc } from "firebase/firestore";
+import { serverTimestamp } from "firebase/firestore";
+
 
 const parametrosURL = new URLSearchParams(window.location.search);
 const codigo = parametrosURL.get("codigo");
@@ -24,40 +27,73 @@ let tiempo_puntuacion = segundos * 100;
 let cancionActual;
 let intervaloTemporizador = null;
 
-if (codigo) {
-    referenciaSala = doc(db, "salas", codigo);
+let diferenciaServidor = 0;
+let horaServidor;
 
-    onSnapshot(referenciaSala, async (snapshot) => {
-        if (snapshot.exists()) {
-            const nuevosDatos = snapshot.data();
-            salaActual = nuevosDatos;
+async function arrancarJuego() {
+    if (codigo) {
+        
 
-            // 🔄 LÓGICA DE REENGANCHE (Tu "fix fácil")
-            // Si la sala existe pero mi nombre no está en la lista (por culpa del beforeunload)
-            if (salaActual.jugadores && !salaActual.jugadores.includes(miNombre)) {
-                console.log("¡Vaya! No estoy en la lista. Re-conectando...");
-                await updateDoc(referenciaSala, {
-                    jugadores: arrayUnion(miNombre)
-                });
-                return; // Salimos de este snapshot para esperar al siguiente con los datos correctos
-            }
+        async function sincronizarReloj() {
+            // Creamos un documento temporal con la hora del servidor
+            const tempDoc = doc(db, "ajustes", "hora");
+            await setDoc(tempDoc, { hora: serverTimestamp(), nombre: miNombre, codigo: codigo });
+            
+            const snap = await getDoc(tempDoc);
+            horaServidor = snap.data().hora.toMillis();
+            const horaLocal = obtenerHoraSincronizada();
+            
+            // Calculamos cuántos milisegundos de diferencia hay
+            diferenciaServidor = horaServidor - horaLocal;
+            console.log("Sincronización completada. Desvíi:", diferenciaServidor, "ms");
 
-            if (ronda > rondas) {
-                location.href = `lobby.html?codigo=${codigo}`;
-                return;
-            }
 
-            if (salaActual.rondaActual !== rondaLocal) {
-                rondaLocal = salaActual.rondaActual;
-                gestionarEstadoJuego();
-            }
-        } else {
-            console.error("❌ La sala ha sido borrada.");
-            location.href = "index.html";
         }
-    });
-} else {
-    console.error("❌ No hay código en la URL.");
+
+        // Llamamos a esto al cargar la página
+        await sincronizarReloj();
+        referenciaSala = doc(db, "salas", codigo);
+
+        onSnapshot(referenciaSala,{ includeMetadataChanges: true }, async (snapshot) => {
+            if (snapshot.metadata.hasPendingWrites) return;
+            if (snapshot.exists()) {
+                const nuevosDatos = snapshot.data();
+                salaActual = nuevosDatos;
+
+                // Si la sala existe pero mi nombre no está en la lista (por culpa del beforeunload)
+                if (salaActual.jugadores && !salaActual.jugadores.includes(miNombre)) {
+                    console.log("¡Vaya! No estoy en la lista. Re-conectando...");
+                    await updateDoc(referenciaSala, {
+                        jugadores: arrayUnion(miNombre)
+                    });
+                    return; // Salimos de este snapshot para esperar al siguiente con los datos correctos
+                }
+
+                if (ronda > rondas) {
+                    location.href = `lobby.html?codigo=${codigo}`;
+                    return;
+                }
+
+                if (salaActual.rondaActual !== rondaLocal) {
+                    rondaLocal = salaActual.rondaActual;
+                    gestionarEstadoJuego();
+                }
+            } else {
+                console.error("❌ La sala ha sido borrada.");
+                location.href = "index.html";
+            }
+        });
+    } else {
+        console.error("❌ No hay código en la URL.");
+    }
+}
+
+arrancarJuego();
+
+function obtenerHoraSincronizada() {
+    return Date.now() + diferenciaServidor;
+
+    
 }
 
 function gestionarEstadoJuego() {
@@ -100,16 +136,19 @@ function gestionarEstadoJuego() {
     iniciarReloj();
 }
 
+
+
 function iniciarReloj() {
     const elementoContador = document.getElementById('contador');
 
     function actualizarTiempo() {
-        const milisegundosPasados = Date.now() - salaActual.tiempoInicioRonda;
+        const milisegundosPasados = obtenerHoraSincronizada() - salaActual.tiempoInicioRonda.toMillis();
         const segundosPasados = Math.floor(milisegundosPasados / 1000);
 
         segundos = 30 - segundosPasados;
 
         if (segundos > 0 && seguir) {
+            if(segundos >30) segundos=30;
             if (elementoContador) elementoContador.textContent = segundos;
         } else {
             segundos = 0;
@@ -167,7 +206,7 @@ async function procesarFinDeRonda() {
                 rondaActual: salaActual.rondaActual + 1,
                 votos: [],
                 puntuaciones: puntuacionesOficiales,
-                tiempoInicioRonda: Date.now()
+                tiempoInicioRonda: serverTimestamp()
             });
         }, 5000);
     }

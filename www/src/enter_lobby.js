@@ -1,5 +1,6 @@
 import { db } from "./firebase.js";
 import { doc, onSnapshot, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, deleteDoc } from "firebase/firestore";
+import { serverTimestamp } from "firebase/firestore";
 
 const parametrosURL = new URLSearchParams(window.location.search);
 const codigo = parametrosURL.get("codigo");
@@ -8,6 +9,7 @@ const cod_text = document.getElementById("code");
 const players_grid = document.getElementById("players_grid");
 var listaJugadores = null;
 const miNombre = localStorage.getItem("nombreUsuario");
+let host;
 
 // ✅ FIX: referenciaSala declarada en scope de módulo para que abandonarSala() la pueda usar
 let referenciaSala = null;
@@ -17,6 +19,15 @@ if (codigo) {
     cod_text.textContent = "ROOM ID: " + codigo;
     referenciaSala = doc(db, "salas", codigo);
 
+    if(!referenciaSala){
+        await setDoc(doc(db, "salas", codigo), {
+            estado: "esperandoJugadores",
+            creador: nombre,
+            jugadores: [nombre],
+            canciones: cancionesPartida
+        });
+    }
+
     onSnapshot(referenciaSala, { includeMetadataChanges: true }, (documento) => {
         if (documento.metadata.hasPendingWrites) {
             console.log("⏳ Firebase está subiendo los datos... esperando confirmación.");
@@ -24,7 +35,8 @@ if (codigo) {
         }
         if (documento.exists()) {
             const datosSala = documento.data();
-
+            host = datosSala.creador;
+            console.log("Mi nombre: ", miNombre, " Host: ", host);
             if (datosSala.estado === "esperandoJugadores") {
                 listaJugadores = datosSala.jugadores || [];
                 players_grid.innerHTML = "";
@@ -34,6 +46,10 @@ if (codigo) {
                     tarjetaJugador.innerText = "🎮 " + nombre;
                     players_grid.appendChild(tarjetaJugador);
                 });
+
+                if(miNombre == host && !document.getElementById("btn-empezar")){
+                    crearBoton();
+                }
             } else if (datosSala.estado === "jugando") {
                 console.log("¡A jugar!");
                 yendoAlJuego = true;
@@ -46,35 +62,46 @@ if (codigo) {
         }
     });
 
-    const btnEmpezar = document.querySelector("#btn-empezar");
-    btnEmpezar.addEventListener("click", async (e) => {
-        e.preventDefault();
-        const docSnap = await getDoc(referenciaSala);
-        const datos = docSnap.data();
+function crearBoton(){
+    console.log("Crear boton");
+        const btnEmpezar = document.createElement("button");
+        const main = document.getElementById("main");
+        btnEmpezar.className = "btn-primary";
+        btnEmpezar.id = "btn-empezar";
+        btnEmpezar.textContent = "Start Game";
+        btnEmpezar.addEventListener("click", async (e) => {
+            e.preventDefault();
+            const docSnap = await getDoc(referenciaSala);
+            const datos = docSnap.data();
 
-        const cancionesMezcladas = barajarArray(datos.canciones);
+            const cancionesMezcladas = barajarArray(datos.canciones);
 
-        try {
-            console.log("Intentando actualizar Firebase...");
-            let puntuaciones = listaJugadores.map(jugador => ({
-                nombre: jugador,
-                puntuacion: 0
-            }));
+            try {
+                console.log("Intentando actualizar Firebase...");
+                let puntuaciones = listaJugadores.map(jugador => ({
+                    nombre: jugador,
+                    puntuacion: 0
+                }));
 
-            await updateDoc(referenciaSala, {
-                estado: "jugando",
-                cancionesPartida: cancionesMezcladas,
-                rondaActual: 0,
-                votos: [],
-                puntuaciones: puntuaciones,
-                tiempoInicioRonda: Date.now()
-            });
+                await updateDoc(referenciaSala, {
+                    estado: "jugando",
+                    cancionesPartida: cancionesMezcladas,
+                    rondaActual: 0,
+                    votos: [],
+                    puntuaciones: puntuaciones,
+                    tiempoInicioRonda: serverTimestamp()
+                });
 
-            console.log("✅ ¡Firebase actualizado! Todos deberían saltar a game.html.");
-        } catch (error) {
-            console.error("❌ ERROR AL ESCRIBIR EN FIREBASE:", error);
-        }
-    });
+                console.log("✅ ¡Firebase actualizado! Todos deberían saltar a game.html.");
+            } catch (error) {
+                console.error("❌ ERROR AL ESCRIBIR EN FIREBASE:", error);
+            }
+        });
+        main.appendChild(btnEmpezar);
+}
+    
+
+    
 
 } else {
     cod_text.textContent = "Error: No se encontró el código de la sala";

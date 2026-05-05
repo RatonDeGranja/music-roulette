@@ -268,3 +268,16 @@ function mostrarAlerta(mensaje) {
         setTimeout(() => toast.remove(), 300);
     }, 3000);
 }
+
+const btnDonar = document.getElementById("btn-donar");
+
+if (btnDonar) {
+    btnDonar.addEventListener("click", (e) => {
+        e.preventDefault();
+        // Sustituye esta URL por tu enlace real
+        const urlDonacion = "https://www.buymeacoffee.com/ratondegranja";
+        
+        // El '_blank' asegura que se abra fuera de tu juego
+        window.open(urlDonacion, '_blank');
+    });
+}
